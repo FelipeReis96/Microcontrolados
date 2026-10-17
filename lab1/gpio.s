@@ -30,7 +30,8 @@ Init_Buttons_PortJ
     LDR     R1, =SYSCTL_PRGPIO_R
 WaitGPIOJ
     LDR     R0, [R1]
-    TST     R0, #0x00000100
+    AND     R0, R0, #0x00000100
+    CMP     R0, #0
     BEQ     WaitGPIOJ
     
     ; 3. Configurar PJ0 e PJ1 como entrada (DIR = 0 nos bits 0 e 1)
