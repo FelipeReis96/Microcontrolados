@@ -180,10 +180,10 @@ Pulso
 
 
 ; Um ciclo de multiplexação: DS1, DS2 e LEDs, cada um com 1 ms ligado e 1 ms de guarda
-; R0 = valor de 0 a 99, R1 = LEDs (0 = apagados, diferente de 0 = acesos)
+; R0 = valor de 0 a 99, R1 = padrão dos LEDs (cada bit é um LED)
 Varredura_Display
     PUSH    {R4-R7, R14}
-    MOV     R6, R1              ; R6 = estado dos LEDs
+    MOV     R6, R1              ; R6 = padrão dos LEDs
     MOV     R2, #10
     UDIV    R4, R0, R2          ; R4 = dezenas
     MLS     R5, R4, R2, R0      ; R5 = unidades
@@ -203,12 +203,8 @@ Varredura_Display
     MOV     R2, #0x20
     BL      Pulso
 
-    ; LEDs em PP5 (todos acesos com 0xFF)
-    MOV     R0, #0
-    CMP     R6, #0
-    BEQ     VarreduraLeds
-    MOV     R0, #0xFF
-VarreduraLeds
+    ; LEDs em PP5
+    MOV     R0, R6
     LDR     R1, =(GPIO_PORTP_AHB_BASE + GPIO_O_DATA)
     MOV     R2, #0x20
     BL      Pulso

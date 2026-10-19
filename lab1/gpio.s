@@ -2,13 +2,13 @@
         THUMB                        
 
 
-SYSCTL_RCGCGPIO_R   EQU 0x400FE608
-SYSCTL_PRGPIO_R     EQU 0x400FEA08
-GPIO_PORTJ_AHB_BASE EQU 0x40060000
-GPIO_O_DIR          EQU 0x00000400
-GPIO_O_PUR          EQU 0x00000510
-GPIO_O_DEN          EQU 0x0000051C
-GPIO_O_DATA         EQU 0x000003FC
+SYSCTL_RCGCGPIO_R   EQU 0x400FE608 ;liga o clock das placas
+SYSCTL_PRGPIO_R     EQU 0x400FEA08 ;porta pronta
+GPIO_PORTJ_AHB_BASE EQU 0x40060000 ;end base porta J
+GPIO_O_DIR          EQU 0x00000400 ;desl do reg de direção
+GPIO_O_PUR          EQU 0x00000510 ;desl do pull-up
+GPIO_O_DEN          EQU 0x0000051C ;desl do enable digital
+GPIO_O_DATA         EQU 0x000003FC ;desl do reg de dados
 
 
         AREA    |.text|, CODE, READONLY, ALIGN=2
