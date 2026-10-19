@@ -5,11 +5,13 @@
 ; R5  = passo (1 a 9)
 ; R6  = padrao dos LEDs para o numero atual
 ; R7  = ciclos de varredura restantes para o numero atual
+; R8  = padrao que alterna (0x55 ou 0xAA) a cada numero primo
 ; R9  = ultima leitura de USR_SW1, R10 = ultima leitura de USR_SW2 (deteccao de borda)
 
 CICLOS_POR_NUMERO   EQU 80          ; 80 ciclos de ~6 ms = ~0,5 s por numero
-LEDS_PRIMO          EQU 0xFF        ; todos os LEDs acesos
-LEDS_NAO_PRIMO      EQU 0x55        ; LEDs acesos de forma alternada
+LEDS_IMPARES        EQU 0x55        ; LEDs 1, 3, 5 e 7
+LEDS_PARES          EQU 0xAA        ; LEDs 2, 4, 6 e 8
+LEDS_TROCA          EQU 0xFF        ; inverte um padrao no outro
 
         THUMB
 
@@ -33,6 +35,7 @@ Start
     ; 2. Inicializar variaveis principais
     MOV     R4, #0
     MOV     R5, #1
+    MOV     R8, #LEDS_PARES         ; o 1o primo inverte para os impares
     MOV     R9, #1                  ; botoes soltos (SW1 = 1, SW2 = 2)
     MOV     R10, #2
 
@@ -43,11 +46,12 @@ MainLoop
     CMP     R0, #1
     BNE     NaoPrimo
 
-    MOV     R6, #LEDS_PRIMO         ; primo: todos os LEDs acesos
+    EOR     R8, R8, #LEDS_TROCA     ; primo: alterna impares e pares
+    MOV     R6, R8
     B       Exibe
 
 NaoPrimo
-    MOV     R6, #LEDS_NAO_PRIMO     ; nao primo: LEDs alternados
+    MOV     R6, #0                  ; nao primo: LEDs apagados
 
 Exibe
     MOV     R7, #CICLOS_POR_NUMERO
