@@ -45,6 +45,7 @@ MsgVitoria      DCB "PARABENS! 100!", 0
         IMPORT  LCD_WriteString
         IMPORT  Teclado_Init
         IMPORT  Teclado_LeTecla
+        IMPORT  Teclado_Varredura
         IMPORT  LEDs_Init
         IMPORT  LEDs_Todos
         IMPORT  LEDs_Apaga
@@ -74,10 +75,16 @@ TelaApresentacao
     BL      LCD_SetCursor
     LDR     R0, =MsgSubtitulo
     BL      LCD_WriteString
-    ; espera a 1a tecla (bloqueante) e usa o SysTick como semente do RNG
-    BL      Teclado_LeTecla
+    ; espera a 1a tecla e captura o SysTick no instante em que ela e detectada
+    ; (antes do debounce, cujo Delay_ms zera o SysTick e deixaria a semente fixa)
+SementeWait
+    BL      Teclado_Varredura
+    CMP     R0, #0xFF               ; TECLA_NENHUMA
+    BEQ     SementeWait
     LDR     R1, =NVIC_ST_CURRENT_R
-    LDR     R0, [R1]
+    LDR     R6, [R1]                ; R6 = semente
+    BL      Teclado_LeTecla         ; completa debounce e espera soltar a tecla
+    MOV     R0, R6
     BL      Random_Semente
     BL      Jogo_Init
 
