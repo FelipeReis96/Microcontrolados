@@ -45,6 +45,7 @@ MsgVitoria      DCB "PARABENS! 100!", 0
         IMPORT  LCD_WriteString
         IMPORT  Teclado_Init
         IMPORT  Teclado_LeTecla
+        IMPORT  Teclado_Varredura
         IMPORT  LEDs_Init
         IMPORT  LEDs_Todos
         IMPORT  LEDs_Apaga
@@ -74,11 +75,19 @@ TelaApresentacao
     BL      LCD_SetCursor
     LDR     R0, =MsgSubtitulo
     BL      LCD_WriteString
-    ; espera a 1a tecla (bloqueante) e usa o SysTick como semente do RNG
-    BL      Teclado_LeTecla
-    LDR     R1, =NVIC_ST_CURRENT_R
-    LDR     R0, [R1]
+    ; espera a 1a tecla contando as varreduras -> entropia da duracao do aperto
+    MOV     R4, #0
+TA_seed
+    ADD     R4, R4, #1
+    BL      Teclado_Varredura
+    CMP     R0, #0xFF
+    BEQ     TA_seed
+    MOV     R0, R4                  ; semente = quantas varreduras ate apertar
     BL      Random_Semente
+TA_rel
+    BL      Teclado_Varredura       ; espera soltar a tecla
+    CMP     R0, #0xFF
+    BNE     TA_rel
     BL      Jogo_Init
 
 MainLoop

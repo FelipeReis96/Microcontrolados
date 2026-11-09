@@ -127,14 +127,14 @@ LCD_PulsoEnable
     LDR     R0, [R1]
     ORR     R0, R0, #LCD_E          ; E = 1
     STR     R0, [R1]
-    LDR     R2, =2000
+    LDR     R2, =6000               ; pulso mais largo (mais tolerante a sinal fraco)
 LCD_pe1
     SUBS    R2, R2, #1
     BNE     LCD_pe1
     LDR     R0, [R1]
     BIC     R0, R0, #LCD_E          ; E = 0
     STR     R0, [R1]
-    LDR     R2, =2000
+    LDR     R2, =6000
 LCD_pe2
     SUBS    R2, R2, #1
     BNE     LCD_pe2
@@ -177,7 +177,7 @@ LCD_Clear
     PUSH    {LR}
     MOV     R0, #LCD_CLEAR
     BL      LCD_Comando
-    MOV     R0, #2
+    MOV     R0, #5
     BL      Delay_ms
     POP     {PC}
 
