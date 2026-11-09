@@ -75,17 +75,19 @@ TelaApresentacao
     BL      LCD_SetCursor
     LDR     R0, =MsgSubtitulo
     BL      LCD_WriteString
-    ; espera a 1a tecla e captura o SysTick no instante em que ela e detectada
-    ; (antes do debounce, cujo Delay_ms zera o SysTick e deixaria a semente fixa)
-SementeWait
+    ; espera a 1a tecla contando as varreduras -> entropia da duracao do aperto
+    MOV     R4, #0
+TA_seed
+    ADD     R4, R4, #1
     BL      Teclado_Varredura
-    CMP     R0, #0xFF               ; TECLA_NENHUMA
-    BEQ     SementeWait
-    LDR     R1, =NVIC_ST_CURRENT_R
-    LDR     R6, [R1]                ; R6 = semente
-    BL      Teclado_LeTecla         ; completa debounce e espera soltar a tecla
-    MOV     R0, R6
+    CMP     R0, #0xFF
+    BEQ     TA_seed
+    MOV     R0, R4                  ; semente = quantas varreduras ate apertar
     BL      Random_Semente
+TA_rel
+    BL      Teclado_Varredura       ; espera soltar a tecla
+    CMP     R0, #0xFF
+    BNE     TA_rel
     BL      Jogo_Init
 
 MainLoop
