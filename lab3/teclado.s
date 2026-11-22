@@ -1,18 +1,25 @@
 ; teclado.s
-; Lab 2 - Driver do teclado matricial 4x3 (tipo telefone), com debounce por SW
+; Lab 3 - Driver do teclado matricial 4x4, com debounce por SW
 ;
 ; Ligacao na PAT DAELN (Sch_PATDAELN, folha 2, P16):
-;   LINHAS  (saidas)   -> PL0, PL1, PL2, PL3
-;   COLUNAS (entradas) -> PM4, PM5, PM6        (PM7 sobra no layout 4x3)
+;   Saidas (varredura) -> PL0, PL1, PL2, PL3
+;   Entradas (leitura) -> PM4, PM5, PM6, PM7
 ;
-; Varredura: ativa UMA linha em nivel 0 por vez e le as colunas.
-; Colunas em nivel alto por pull-up interno; tecla pressionada -> coluna = 0.
+; IMPORTANTE: nesta montagem as LINHAS e COLUNAS do teclado 4x4 ficaram
+; trocadas em relacao ao layout original 4x3. A tabela TabTeclas abaixo ja
+; esta na ordem REAL da fiacao (deduzida por teste), de modo que cada tecla
+; fisica produz o caractere correto. A linha de cima do teclado (1 2 3 A)
+; e lida por PM7 -- se 1/2/3 continuarem "mortos", falta o fio de PM7.
 ;
-;   Mapa:     PM4  PM5  PM6
-;     PL0:     1    2    3
-;     PL1:     4    5    6
-;     PL2:     7    8    9
-;     PL3:     *    0    #
+; Varredura: ativa UMA saida em nivel 0 por vez e le as 4 entradas.
+; Entradas em nivel alto por pull-up interno; tecla pressionada -> entrada = 0.
+;
+;   Mapa real (indice = saida*4 + entrada):
+;             PM4  PM5  PM6  PM7
+;     PL0:     D    C    B    A
+;     PL1:     #    9    6    3
+;     PL2:     0    8    5    2
+;     PL3:     *    7    4    1
 
         THUMB
 
@@ -29,17 +36,18 @@ GPIO_O_DATA         EQU 0x000003FC
 
 RCGC_TECL_MASK      EQU 0x00000C00  ; L (bit10) + M (bit11)
 
-TECL_LINHAS_MASK    EQU 0x0000000F  ; PL0..PL3
-TECL_COLUNAS_MASK   EQU 0x00000070  ; PM4..PM6
+TECL_LINHAS_MASK    EQU 0x0000000F  ; PL0..PL3 (saidas de varredura)
+TECL_COLUNAS_MASK   EQU 0x000000F0  ; PM4..PM7 (entradas de leitura)
 
 TECLA_NENHUMA       EQU 0xFF
 
         AREA    Constantes, DATA, READONLY, ALIGN=2
+; indice = saida(PL)*4 + entrada(PM): ja na ordem real da fiacao
 TabTeclas
-        DCB     '1', '2', '3'
-        DCB     '4', '5', '6'
-        DCB     '7', '8', '9'
-        DCB     '*', '0', '#'
+        DCB     'D', 'C', 'B', 'A'
+        DCB     '#', '9', '6', '3'
+        DCB     '0', '8', '5', '2'
+        DCB     '*', '7', '4', '1'
 
         AREA    |.text|, CODE, READONLY, ALIGN=2
 
@@ -117,16 +125,18 @@ TV_row
 TV_dly
     SUBS    R6, R6, #1
     BNE     TV_dly
-    ; le as colunas
+    ; le as entradas PM4..PM7
     LDR     R1, =(GPIO_PORTM_BASE + GPIO_O_DATA)
     LDR     R0, [R1]
     AND     R0, R0, #TECL_COLUNAS_MASK
-    TST     R0, #0x10               ; PM4 -> coluna 0
+    TST     R0, #0x10               ; PM4 -> entrada 0
     BEQ     TV_c0
-    TST     R0, #0x20               ; PM5 -> coluna 1
+    TST     R0, #0x20               ; PM5 -> entrada 1
     BEQ     TV_c1
-    TST     R0, #0x40               ; PM6 -> coluna 2
+    TST     R0, #0x40               ; PM6 -> entrada 2
     BEQ     TV_c2
+    TST     R0, #0x80               ; PM7 -> entrada 3
+    BEQ     TV_c3
     ADD     R4, R4, #1
     B       TV_row
 TV_c0
@@ -137,10 +147,12 @@ TV_c1
     B       TV_found
 TV_c2
     MOV     R6, #2
+    B       TV_found
+TV_c3
+    MOV     R6, #3
 TV_found
-    MOV     R0, #3
-    MUL     R0, R4, R0
-    ADD     R0, R0, R6              ; indice = linha*3 + coluna
+    LSL     R0, R4, #2              ; indice = saida*4 + entrada
+    ADD     R0, R0, R6
     LDRB    R0, [R7, R0]
     BL      TV_restaura
     POP     {R4-R7, PC}

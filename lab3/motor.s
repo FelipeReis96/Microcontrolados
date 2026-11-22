@@ -9,7 +9,7 @@
 ;   passo completo (2 bobinas por passo) = 2048 passos por volta
 ;   meio passo                           = 4096 passos por volta
 ;
-; Este arquivo tambem contem o SysTick_Handler (interrupcao de 1 ms), que
+; Este arquivo tambem contem o Timer2A_Handler (interrupcao de 1 ms do GPTM), que
 ;   1. incrementa Ticks (base de tempo do Delay_ms);
 ;   2. enquanto Estado = GIRANDO, a cada STEP_MS dá um passo, conta passos
 ;      restantes, avanca o "LED de 45 graus" e detecta o fim do movimento.
@@ -32,6 +32,11 @@ GPIO_PORTH_BASE     EQU 0x4005F000
 GPIO_O_DIR          EQU 0x00000400
 GPIO_O_DEN          EQU 0x0000051C
 GPIO_O_DATA         EQU 0x000003FC
+
+; Timer2 (GPTM): registrador para limpar a flag de interrupcao na ISR
+TIMER2_BASE         EQU 0x40032000
+GPTM_O_ICR          EQU 0x00000024
+GPTM_ICR_TATO       EQU 0x00000001
 
 RCGC_H_MASK         EQU 0x00000080  ; Port H (bit 7)
 MOTOR_MASK          EQU 0x0000000F  ; PH0..PH3
@@ -72,7 +77,7 @@ Countdown       SPACE   4           ; ms ate o proximo passo
         EXPORT  Motor_Init
         EXPORT  Motor_Zera
         EXPORT  Motor_Inicia
-        EXPORT  SysTick_Handler
+        EXPORT  Timer2A_Handler
 
         IMPORT  Ticks
 
@@ -191,11 +196,15 @@ MIn_seq
     BX      LR
 
 ; -----------------------------------------------------------------------------
-; SysTick_Handler - interrupcao de 1 ms (so usa R0-R3, salvos pelo hardware)
+; Timer2A_Handler - interrupcao de 1 ms do GPTM (so usa R0-R3, salvos pelo HW)
 ; Prioridade mais alta que a do botao (Port J): o cancelamento nunca interrompe
 ; um passo no meio, entao as bobinas nao voltam a ser energizadas apos cancelar.
+; OBRIGATORIO no GPTM: limpar a flag de timeout (GPTMICR) logo na entrada.
 ; -----------------------------------------------------------------------------
-SysTick_Handler
+Timer2A_Handler
+    LDR     R0, =TIMER2_BASE
+    MOV     R1, #GPTM_ICR_TATO
+    STR     R1, [R0, #GPTM_O_ICR]   ; reconhece/limpa a interrupcao de timeout
     LDR     R0, =Ticks
     LDR     R1, [R0]
     ADD     R1, R1, #1

@@ -8,13 +8,13 @@
 ;   VOLTAS   --'#' (1..10)--->  VELOC      digitos 0-9 montam o valor; '#' confirma
 ;   VELOC    --'1' ou '2'---->  SENTIDO    1 = passo completo, 2 = meio passo
 ;   SENTIDO  --'1' ou '2'---->  GIRANDO    1 = horario, 2 = anti-horario (dispara o motor)
-;   GIRANDO  --passos = 0---->  FIM        (ISR do SysTick)
+;   GIRANDO  --passos = 0---->  FIM        (ISR do Timer2A)
 ;   GIRANDO  --USR_SW1------>   CANCELADO  (ISR do Port J)
 ;   FIM / CANCELADO --'*'--->   INIT
 ;   VOLTAS / VELOC / SENTIDO --'*'--> INIT
 ;
 ; Em GIRANDO o teclado nao e lido (nenhuma tecla e aceita). O movimento, a contagem
-; de passos e o LED de 45 graus sao feitos na ISR do SysTick (motor.s); aqui o laco
+; de passos e o LED de 45 graus sao feitos na ISR do Timer2A (motor.s); aqui o laco
 ; so atualiza o LCD e os LEDs.
 ;
 ; Registradores: R4..R7 sao preservados pelas rotinas chamadas (lcd/teclado/leds).
@@ -66,7 +66,7 @@ Dir             SPACE   4           ; 0 = horario, 1 = anti-horario
 
         EXPORT  Start
 
-        IMPORT  SysTick_Init
+        IMPORT  Timer2_Init
         IMPORT  LCD_Init
         IMPORT  LCD_Clear
         IMPORT  LCD_SetCursor
@@ -89,8 +89,8 @@ Dir             SPACE   4           ; 0 = horario, 1 = anti-horario
 
 ; =============================================================================
 Start
-    BL      Motor_Init              ; antes do SysTick: a ISR usa Estado
-    BL      SysTick_Init            ; base de 1 ms com interrupcao
+    BL      Motor_Init              ; antes do Timer: a ISR usa Estado
+    BL      Timer2_Init             ; base de 1 ms com interrupcao (GPTM Timer2A)
     BL      LCD_Init
     BL      Teclado_Init
     BL      LEDs_Init
@@ -114,9 +114,9 @@ MainLoop
     CMP     R0, #ST_GIRANDO
     BEQ     Do_Girando
     CMP     R0, #ST_FIM
-    BEQ     Do_Fim
+    BEQ.W   Do_Fim
     CMP     R0, #ST_CANCEL
-    BEQ     Do_Cancel
+    BEQ.W   Do_Cancel
     B       Start                   ; estado invalido: reinicia
 
 ; ----- INIT: posicao 0 grau / 0 voltas, pede o numero de voltas --------------
@@ -135,7 +135,7 @@ Do_Init
 Do_Voltas
     BL      Teclado_LeTecla         ; bloqueante, com debounce
     CMP     R0, #'*'
-    BEQ     ToInit
+    BEQ.W   ToInit
     CMP     R0, #'#'
     BEQ     V_confirma
     CMP     R0, #'0'
@@ -173,7 +173,7 @@ V_confirma
 Do_Veloc
     BL      Teclado_LeTecla
     CMP     R0, #'*'
-    BEQ     ToInit
+    BEQ.W   ToInit
     CMP     R0, #'1'
     BEQ     VL_completo
     CMP     R0, #'2'
@@ -194,7 +194,7 @@ VL_grava
 Do_Sentido
     BL      Teclado_LeTecla
     CMP     R0, #'*'
-    BEQ     ToInit
+    BEQ.W   ToInit
     CMP     R0, #'1'
     BEQ     SE_horario
     CMP     R0, #'2'
