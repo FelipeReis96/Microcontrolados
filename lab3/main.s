@@ -263,8 +263,9 @@ GL_led
     CMP     R0, R6
     BEQ     GL_loop
     MOV     R6, R0
-    MOV     R1, #0x80
-    LSR     R0, R1, R0              ; padrao = 0x80 >> posicao (1 LED aceso)
+    MOV     R1, #0x01
+    LSL     R0, R1, R0              ; padrao = 0x01 << posicao (1 LED aceso)
+                                    ; horario -> LED anda p/ direita (visao do LCD)
     BL      LEDs_Escreve
     B       GL_loop
 
